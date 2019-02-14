@@ -1,0 +1,18 @@
+import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { LayoutComponent } from './layout/layout.component';
+import { HeaderComponent } from './header/header.component';
+import { FooterComponent } from './footer/footer.component';
+
+//Loader http
+import { NgHttpLoaderModule } from 'ng-http-loader'; 
+
+@NgModule({
+  imports: [
+    CommonModule,
+    NgHttpLoaderModule.forRoot()
+  ],
+  declarations: [LayoutComponent, HeaderComponent, FooterComponent],
+  exports: [LayoutComponent]
+})
+export class UiModule { }
