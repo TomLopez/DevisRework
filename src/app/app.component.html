@@ -3,10 +3,10 @@
     <h1>{{ title }}</h1>
     <div class="row radiocontainer">
       <div class="col-md-4">
-        <input type="radio" name="radiotype" id="devis" checked="true"><label for="devis">Devis</label>
+        <input type="radio" name="radiotype" id="devis" (change)="onSelectionChange($event)"checked="true"><label for="devis">Devis</label>
       </div>
       <div class="col-md-4">
-        <input type="radio" name="radiotype" id="facturation"><label for="facturation">Facturation</label>
+        <input type="radio" name="radiotype" id="facturation" (change)="onSelectionChange($event)"><label for="facturation">Facturation</label>
       </div>
       <div class="col-md-4">
         <select type="select" class="form-control" [(ngModel)]="selectedEpic" [hidden]="epics.length > 0  ? false : true" (change)="epicSelected($event)"  name="epicselect" id="epicselect">
@@ -18,6 +18,9 @@
       <div class="col-md-4"></div>  
       <div class="col-md-4"><input type="button" (click)="proceed($event)" value="Procésser" [hidden]="selectedEpic != null ? false : true" ></div>  
       <div class="col-md-4"></div>  
+      <div id="monthSelectorContainer" class="col-md-12">
+
+      </div>  
     </div>
   </div>
 </app-layout>

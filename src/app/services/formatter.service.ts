@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 // import { ServerobjectModule } from './serverobject.service';
-import { HttpClient } from '@angular/common/http/';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http/';
 // import { AlertDisplayerService } from '../alert-displayer.service';
 // import { LogMessageComponent } from '../log-message/log-message.component';
 import { HttpResponse } from '@angular/common/http/src/response';
@@ -108,19 +108,21 @@ export class FormatterService {
   }
 
   public encapsulateObjects(projects, stories, tasks, isFactu, tarCDP = null, tarDT = null,epicCommande) {
-   // this.alerter.setlogProcess("encapsulating objects");
     let GeneralObject: any = {};
+    // console.log('argument', arguments)
     if (projects != undefined && stories != undefined && tasks != undefined) {
       GeneralObject.projets = projects;
       for (let p in GeneralObject.projets) {
         GeneralObject.projets[p].Stories = stories.filter(o => o.Fk_Project == GeneralObject.projets[p].ID);
         for (let t in GeneralObject.projets[p].Stories) {
+          // console.log('tasks before assign',tasks);
           GeneralObject.projets[p].Stories[t].Tasks = tasks.filter(o => o.FK_Stories == GeneralObject.projets[p].Stories[t].OriginalId);
         }
       }
       GeneralObject.JourDT = tarDT
       GeneralObject.jourCdp = tarCDP;
       GeneralObject.epic = epicCommande;
+      // console.log('avant le send',GeneralObject);
       this.sendToServer(GeneralObject, isFactu);
     }
   }
@@ -150,12 +152,25 @@ export class FormatterService {
   }
   
   public Angularget(configUrl, objetAEnvoyer) {
-    return this.http.post(configUrl, objetAEnvoyer, {
-      headers: {
-        "dataType": "json",
-        "Content-Type": "application/json; charset=UTF-8"
-      }
-    });
+    // console.log('arguments',arguments);
+    // let headers = {
+    //   // 'X-TrackerToken': 'b4a752782f711a7c564221c2b0c2d5dc',
+    //   'Content-Type': 'application/json'
+    // }
+    // console.log('objetaeznvoyer',objetAEnvoyer);
+    let headers = new HttpHeaders();
+    headers.append("DataType", "json")
+    headers.append("Content-type", "application/json; charset=UTF-8");
+    // let fd = new FormData();
+    // fd.append('JourDT', objetAEnvoyer.JourDT);
+    // fd.append('projets', JSON.stringify(objetAEnvoyer.projets));
+    // fd.append('JourCDP', objetAEnvoyer.JourCDP);
+    // debugger;
+    return this.http.post(configUrl, objetAEnvoyer, {headers: {
+      'DataType': 'json',
+      'Content-type': 'application/json; charset=UTF-8'
+    }});
+    // return this.http.post(configUrl, objetAEnvoyer);
   }
 
   createForm() {
@@ -189,15 +204,11 @@ export class FormatterService {
       let initialEmployes = [];
       this.http.get("http://localhost/DevisAPI/api/Ressource/").toPromise().then((res) => {
         for (let emp in res) {
-          console.log("res[emp].Initial", res[emp].Initial);
           initialEmployes.push(res[emp].Initial)
         }
         let initialInexistante = [];
-        console.log('scjtroudel',taches);
 
         for (let currentTasks in taches.Taches) {
-          console.log('ioujphe',);
-          console.log(taches.Taches[currentTasks]);
           if (taches.Taches[currentTasks] && taches.Taches[currentTasks].initials && taches.Taches[currentTasks].initials.length > 2) {
             let owners = taches.Taches[currentTasks].initials.split("+");
             for (let currentOwner in owners) {
@@ -211,7 +222,6 @@ export class FormatterService {
             }
           }
         }
-        console.log('ALLALALALALALLALALALALA', initialInexistante)
         let initialInexistanteArray = Array.from(initialInexistante);
         if (initialInexistanteArray.length > 0) {
           this.http.get('http://localhost/DevisAPI/api/tarification/').toPromise().then((res) => {
@@ -250,6 +260,16 @@ export class FormatterService {
 
   //Déplacer ca ou il faut
   public sendToServer(GeneralObject, isFactu) {
+    // let httpparams = new HttpParams();
+    // httpparams.append('projets', JSON.stringify(GeneralObject.projets));
+    // httpparams.append('epic', JSON.stringify(GeneralObject.epic));
+    // GeneralObject.projets = [];
+    // let body = new FormData();
+    // body.append('epic', GeneralObject.epic);
+    // body.append('JourDT', GeneralObject.JourDT);
+    // body.append('JourCDP', GeneralObject.JourCDP);
+    // body.append('projets', JSON.stringify(GeneralObject.projets))
+    console.log('before send',GeneralObject);
     if (isFactu) {
       console.log("sending object : ", GeneralObject);
       this.Angularget('http://localhost/DevisAPI/api/Facturation/', JSON.stringify(GeneralObject)).toPromise().then((file: HttpResponse<string>) => {
@@ -269,8 +289,9 @@ export class FormatterService {
         // this.alerter.open(alertProcess);
       });
     } else {
-      console.log("sending object : ", GeneralObject);
-      this.Angularget('http://localhost/DevisAPI/api/Devis/', JSON.stringify(GeneralObject)).toPromise().then((res) => {
+      // console.log("sending object : ", GeneralObject);
+      // this.Angularget('http://localhost/DevisAPI/api/Devis/', JSON.stringify(GeneralObject)).toPromise().then((res) => {
+      this.Angularget('http://localhost/DevisAPI/api/Devis/',JSON.stringify(GeneralObject)).toPromise().then((res) => {
         let alertProcess = {
           title : "Terminé",
           content : "Processus Terminé :)"

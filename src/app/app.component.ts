@@ -27,6 +27,8 @@ export class AppComponent implements OnInit{
   selectedEpic : string = null;
   concernedProjects : any[];
   concernedStories: any[];
+  totalStories: any[];
+  concernedStoriesFactu: any[];
   concernedTasks: any[];
 
   private tarifications;
@@ -34,7 +36,8 @@ export class AppComponent implements OnInit{
   private ressourceForm;
   private modalRessourceRef;
   private FgTarificationData: FormControl[];
-  private missingRessources
+  private missingRessources;
+  private isFactu = false;
 
   @ViewChild('ajoutRessources') ajoutRessources: NgbActiveModal;
 
@@ -76,34 +79,50 @@ export class AppComponent implements OnInit{
     }
 
     setModalAjoutRessource(initial) {
-      let modalRef = this.modalService.open(this.ajoutRessources, { backdrop: "static"});
-      this.modalRessourceRef = modalRef;
-      this.FgTarificationData = this.tarifications.map(tarif => {
-        return new FormControl(false);
-      });
-      this.createForm(initial);
-      console.log('zopjnvrozejezrvnk', this.ressourceForm)
-      return modalRef;
+      return new Promise<any>((resolve, reject) => {
+        let modalRef = this.modalService.open(this.ajoutRessources, { backdrop: "static"});
+        this.modalRessourceRef = modalRef;
+        this.FgTarificationData = this.tarifications.map(tarif => {
+          return new FormControl(false);
+        });
+        this.createForm(initial);
+        console.log('this.missingRessources.length ',this.missingRessources.length );
+        return this.modalRessourceRef.result.then(() => {
+          return resolve(true);
+        });
+      })
     }
 
     proceed(event){
       console.log('event click',event);
-      
       //Récupération des projets contenant l'épique choisi
       this.formatterservice.getProjectFromEpic(this.projects, this.selectedEpic).then(results =>{
         this.concernedProjects = results;
         console.log('azlùkefn', this.concernedProjects)
       }).then(()=>{
         //Récupération des stories pour les projets concernés
-        this.storyservice.getProjectStories(this.concernedProjects, this.selectedEpic).then(result => {
+        this.storyservice.getProjectStories(this.concernedProjects, this.selectedEpic, true).then(result => {
           console.log('suite', result);
-          console.log('detaillé', result.map(o => o.project_id));
+          //console.log('detaillé', result.map(o => o.project_id));
           this.concernedStories = result;
+          // if(this.isFactu){
+          //   this.storyservice.getAcceptedProjectStories(this.concernedProjects, 1 ,this.selectedEpic).then(result => {
+          this.concernedStoriesFactu = result;
+          //      console.log('concerned stories factu',this.concernedStoriesFactu);
+          //   })
+          // }
+          // this.totalStories = this.concernedStories.concat(this.concernedStoriesFactu);
+          this.totalStories = result;
+          console.log('concerned stories', this.concernedStories);
+          console.log('concerned stories accepted', this.concernedStoriesFactu);
+          console.log('concerned stories total', this.totalStories);
+          // debugger;
+          //debugger;
         }).then(() => {
           //Récupération des taches des stories
-          this.taskservice.getTasks(this.concernedStories, this.concernedProjects, false).then(result => {
-            console.log('tasks main',result);
-            this.concernedTasks = result;
+          this.taskservice.getTasks(this.totalStories, this.concernedProjects, this.isFactu).then(result => {
+            this.concernedTasks = result.Taches;
+            console.log('tasks main',this.concernedTasks);
           }).then(() => {
             console.log('concerned tasks',this.concernedTasks);
             this.formatterservice.verifyInitial(this.concernedTasks).then((retour) => {
@@ -111,10 +130,21 @@ export class AppComponent implements OnInit{
               if(retour.missingRessources){
                 this.tarifications = retour.tarifications;
                 this.missingRessources = _.uniq(retour.missingRessources);
-                this.manageMissingRessources()
+                this.manageMissingRessources().then(() => {
+                  this.transmuteObjects();
+                  this.formatterservice.encapsulateObjects(this.concernedProjects, this.totalStories, this.concernedTasks, this.isFactu,12,8,this.selectedEpic);
+                });
                 // this.setModalAjoutRessou_.uniq(rce(_.uniq(retour.missingRessources),retour.missingRessources[0] )
                 //.close((result) => {console.log('resultmodalclose',result);});
+              }else{
+                console.log('before transmute ', JSON.parse(JSON.stringify(this.concernedTasks)))
+                this.transmuteObjects();
+                console.log('after  transmute ', this.concernedTasks)
+
+                this.formatterservice.encapsulateObjects(this.concernedProjects, this.totalStories, this.concernedTasks, this.isFactu,12,8,this.selectedEpic);
+
               }
+              console.log('',);
               // if (retour) {
               //   this.myTransMuter.encapsulateObjects(transformedProject, transformedStories, transformedTasks, false, 0, 0, this.epicCommande)
               //   console.log('envoir en cours');
@@ -128,62 +158,136 @@ export class AppComponent implements OnInit{
         });
       });
     }
+
+    onSelectionChange(event){
+      console.log('entry',event);
+      if(event.target.id == 'devis'){
+        this.isFactu = false;
+      }else{
+        this.isFactu = true;
+      }
+    }
+
+    transmuteObjects(){
+      this.concernedProjects = this.formatterservice.transmuteProjects(this.concernedProjects);
+      this.concernedStories = this.formatterservice.transmuteStories(this.concernedStories);
+      this.concernedStoriesFactu = this.formatterservice.transmuteStories(this.concernedStoriesFactu);
+      this.totalStories = this.formatterservice.transmuteStories(this.totalStories);
+      this.concernedTasks = this.formatterservice.transmuteTasks(this.concernedTasks);
+    }
+
     manageMissingRessources(){
-      if(this.missingRessources.length)
-        this.setModalAjoutRessource(this.missingRessources[0])
+      return new Promise<any>((resolve, reject) => {
+        if(this.missingRessources.length){
+          this.setModalAjoutRessource(this.missingRessources[0]).then(() => {
+            if(this.missingRessources.length){
+              return this.manageMissingRessources().then(() => {resolve(true)});    
+            }else{
+              resolve(true)
+            }
+          })
+        }else{
+          resolve(true);
+        }
+      })
     }
 
     validerRessource() {
-      let data: any = this.ressourceForm.getRawValue();
-      let usersTarifications: boolean[] = data.tarificationForm;
-      let selectedTarifications: Int16Array[] = [];
-      usersTarifications.forEach((isSelected, index) => {
-        if (isSelected)
-          selectedTarifications.push(this.tarifications[index].ID);
-      });
-  
-      if (data.name == '' || data.name == undefined
-        || data.initial == ''
-        || data.initial == undefined
-        || data.email == ''
-        || data.email == undefined
-        || data.niveau == ''
-        || data.niveau == undefined
-        || selectedTarifications == undefined) {
-        // this.alertSrv.open({ title: "Echec", content: "Tout les champs doivent êtres remplies" }).result.then(() => {
-        //   return;
-        // }).catch(() => {
-        //   return;
-        // })
-      } else {
-        let nouvelle_ressource: any = {};
-        nouvelle_ressource.name = data.name;
-        nouvelle_ressource.initial = data.initial;
-        nouvelle_ressource.mail = data.email;
-        nouvelle_ressource.niveau = data.niveau;
-        nouvelle_ressource.tarification = selectedTarifications;
-        console.log(nouvelle_ressource);
-        this.ressourceForm.reset();
-        this.http.post("http://localhost/DevisAPI/api/ressource", nouvelle_ressource).toPromise().then(() => {
-          alert("c'est bon c'est envoyer");
-          this.modalRessourceRef.close();
-          this.missingRessources.shift();
-          this.manageMissingRessources();
-          //this.setcurrentRess();
-        }).catch(() => {
-          // this.alertSrv.open({ title: "Une erreur est survenue", content: 'Le serveur à rencontré une erreur innatendue, le processus va redémarrer' }).result.then(() => {
-          //   location.reload(true);
+      return new Promise((resolve, reject) => {      
+        let data: any = this.ressourceForm.getRawValue();
+        let usersTarifications: boolean[] = data.tarificationForm;
+        let selectedTarifications: Int16Array[] = [];
+        usersTarifications.forEach((isSelected, index) => {
+          if (isSelected)
+            selectedTarifications.push(this.tarifications[index].ID);
+        });
+    
+        if (data.name == '' || data.name == undefined
+          || data.initial == ''
+          || data.initial == undefined
+          || data.email == ''
+          || data.email == undefined
+          || data.niveau == ''
+          || data.niveau == undefined
+          || selectedTarifications == undefined) {
+          // this.alertSrv.open({ title: "Echec", content: "Tout les champs doivent êtres remplies" }).result.then(() => {
+          //   return;
           // }).catch(() => {
-          //   location.reload(true);
+          //   return;
           // })
-        })
-      }
+        } else {
+          let nouvelle_ressource: any = {};
+          nouvelle_ressource.name = data.name;
+          nouvelle_ressource.initial = data.initial;
+          nouvelle_ressource.mail = data.email;
+          nouvelle_ressource.niveau = data.niveau;
+          nouvelle_ressource.tarification = selectedTarifications;
+          console.log(nouvelle_ressource);
+          this.ressourceForm.reset();
+          this.http.post("http://localhost/DevisAPI/api/ressource", nouvelle_ressource).toPromise().then(() => {
+            alert("c'est bon c'est envoyer");
+            this.modalRessourceRef.close();
+            this.missingRessources.shift();
+            
+            //this.manageMissingRessources();
+            //this.setcurrentRess();
+            resolve(true);
+          }).catch(() => {
+            reject(true);
+            // this.alertSrv.open({ title: "Une erreur est survenue", content: 'Le serveur à rencontré une erreur innatendue, le processus va redémarrer' }).result.then(() => {
+            //   location.reload(true);
+            // }).catch(() => {
+            //   location.reload(true);
+            // })
+          })
+        }
+      });
     }
 
     showUsersModal(){
       this.modalRef = this.modalService.open(this.ajoutRessources, { centered: true, windowClass: 'css-modal' })
       this.modalRef.result.then((result) => {
       });
+    }
+
+    setMonthPicker(){
+      let monthValue = this.selectedEpic.split('-');
+      let regexMonth = /[A-Z|a-z]{3,10}/;
+      let regexYears = /([0-9]{4})/;
+      let month = regexMonth.exec(monthValue[1]);
+      let year = regexYears.exec(monthValue[1]);
+      console.log('monthValue', monthValue);
+      let enumMonth = {
+        janvier: '01',
+        février: '02',
+        fevrier: '02',
+        mars: '03',
+        avril: '04',
+        mai: '05',
+        juin: '06',
+        juillet: '07',
+        août: '08',
+        aout: '08',
+        septembre: '09',
+        octobre: '10',
+        novembre: '11',
+        décembre: '12',
+        decembre: '12'
+      }           
+      let monthPicker = document.createElement('input');
+      monthPicker.type = "month";
+      monthPicker.id = "month";
+      monthPicker.pattern = '[0-9]{4}/[0-9]{2}';
+      monthPicker.style.borderRadius = "15px";
+      monthPicker.style.padding = "10px";
+      monthPicker.placeholder = year[0].toString() + '-' + enumMonth[month.toString()]; ;
+      monthPicker.style.position = "absolute";
+      monthPicker.style.bottom = "40px";
+      monthPicker.style.left = "50%";
+      monthPicker.style.transform = "translateX(-50%)";
+      monthPicker.style.width = "25%";
+      let monthSelectorContainer = document.getElementById('monthSelectorContainer');
+      monthSelectorContainer.appendChild(monthPicker);
     }
 
 }

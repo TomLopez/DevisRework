@@ -11,7 +11,6 @@ export class TaskService {
   ) { }
   
   Angularget(configUrl) {
-    console.log('this',this);
     return this.http.get(configUrl, {
       headers: {
         'X-TrackerToken': 'b4a752782f711a7c564221c2b0c2d5dc',
@@ -28,7 +27,7 @@ export class TaskService {
        let promises: Promise<any>[] = [];
        for (let i in projects) {
          if (stories != undefined) {
-           let strfiltered = stories.filter(o => o.project_id == projects[i].id && o.story_type != 'release');
+					 let strfiltered = stories.filter(o => o.project_id == projects[i].id && o.story_type != 'release');
            for (let s in strfiltered) {
              let result = this.Angularget("https://www.pivotaltracker.com/services/v5/projects/" + strfiltered[s].project_id + "/stories/" + strfiltered[s].id + "/tasks")
                .toPromise().then((result) => {
@@ -44,11 +43,14 @@ export class TaskService {
                    storiesid.push(projects[k].id);
                  }
                  if (strfiltered[s].id != undefined && tasks != undefined && strfiltered[s].project_id != undefined) {
-                   if (isFactu == true) {
-                     listeModifie = this.getInfoFromTasks(tasks, strfiltered[s].id, strfiltered[s].project_id, true);
-                   } else if (isFactu == false) {
-                     listeModifie = this.getInfoFromTasks(tasks, strfiltered[s].id, strfiltered[s].project_id, false);
-                   }
+                  //  if (isFactu == true) {
+
+                  //    listeModifie = this.getInfoFromTasks(tasks, strfiltered[s].id, strfiltered[s].project_id, true);
+                  //  } else {
+                  //    listeModifie = this.getInfoFromTasks(tasks, strfiltered[s].id, strfiltered[s].project_id, false);
+									//  }
+									listeModifie = this.getInfoFromTasks(tasks, strfiltered[s].id, strfiltered[s].project_id, isFactu);
+									
                  }
                });
              promises.push(result);
@@ -59,7 +61,6 @@ export class TaskService {
          let objectToSend: any = {};
          objectToSend.Taches = listeModifie;
     //     this.log.setlogProcess("Tasks have been parsed");
-          console.log('posttransmutter',objectToSend);
          resolve(objectToSend);
        })
      });
@@ -151,14 +152,15 @@ export class TaskService {
 					//Tache solo
 					else {
 						//CHerche l'owner de la tache
-						regex = /[A-Z]{2,}$/;
+						regex = /[A-Z]{2,}/;
 						var owner_initial;
-						if (tabDescrInfo[1].trim().match(regex)) {
+						if (tabDescrInfo[1].trim().match(regex)) {							
 							var taskMemeber = regex.exec(tabDescrInfo[1].trim())[0];
 							owner_initial = taskMemeber;
 							tabDescrInfo[1] = tabDescrInfo[1].trim().replace(regex, "");
 							//La duree
-							regex = /\(?(\d)+\)?$/;
+							regex = /\(?(\d)+\)?/;
+							// console.log('DESCRIPTION    ///////////////', tabDescrInfo[1].trim());
 							if (regex.exec(tabDescrInfo[1].trim())) {
 								var regexParenth = /\)$/
 								var duree: any = 0;
@@ -178,15 +180,19 @@ export class TaskService {
 								cpt++;
 							}
 							else {
+								console.log('$$$$$$$$$$$$  NE MARCHE PAS','Pas de duréee', tasks[i].description);
 								// this.log.setlogMessage('Probleme d\'estimation dans la tâche : ' + tasks[i].id + ' de la storie n° : ' + tasks[i].story_id + ' n\'est pas estimée.\r\n https://www.pivotaltracker.com/n/projects/' + projectId + '/stories/' + tasks[i].story_id + '/tasks/' + tasks[i].id)
 								// this.setError('https://www.pivotaltracker.com/n/projects/' + projectId + '/stories/' + tasks[i].story_id + '/tasks/' + tasks[i].id, tasks[i].id);
 							}
 						} else {
+							console.log('$$$$$$$$$$$$  NE MARCHE PAS','Pas d\'initiales', tasks[i].description);
+
 							// this.log.setlogMessage('Probleme d\'initales dans la tâche : ' + tasks[i].id + ' de la storie n° : ' + tasks[i].story_id + ' n\'est attribué.\r\n https://www.pivotaltracker.com/n/projects/' + projectId + '/stories/' + tasks[i].story_id + '/tasks/' + tasks[i].id)
 							// this.setError('https://www.pivotaltracker.com/n/projects/' + projectId + '/stories/' + tasks[i].story_id + '/tasks/' + tasks[i].id, tasks[i].id);
 						}
 					}
 				} else {
+					console.log('$$$$$$$$$$$$  NE MARCHE PAS','Probleme diverse', tasks[i].description);
 					// this.log.setlogMessage('La tâche : ' + tasks[i].id + ' de la storie n° : ' + tasks[i].story_id + ' n\'est pas attribué et/ou n\'est pas estimée.\r\n https://www.pivotaltracker.com/n/projects/' + projectId + '/stories/' + tasks[i].story_id + '/tasks/' + tasks[i].id);
 					// this.setError('https://www.pivotaltracker.com/n/projects/' + projectId + '/stories/' + tasks[i].story_id + '/tasks/' + tasks[i].id, tasks[i].id);
 				}
