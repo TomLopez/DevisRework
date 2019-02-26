@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import * as moment from 'moment';
+import { ClassGetter } from '@angular/compiler/src/output/output_ast';
 
 
 @Injectable({
@@ -20,6 +21,22 @@ export class StoryService {
       }
     });
   }
+
+  private monthConversion = {
+    "janvier":"01",
+    "février":"02",
+    "mars":"03",
+    "avril":"04",
+    "mai":"05",
+    "juin":"06",
+    "juillet":"07",
+    "aout":"08",
+    "septembre":"09",
+    "octobre":"10",
+    "novembre":"11",
+    "décembre":"12"  
+  }
+
 
   public getProjectStories(projects, epic, isFactu = false, date = null) : Promise<any> {
     //this.log.setlogProcess("Getting stories from project");
@@ -67,19 +84,29 @@ export class StoryService {
                   }
                 }
               }
-            }
-            if(projects[i].id == 2120356){
-              console.log('pôhjiaezrfgphiorgazohipgrehiop', myCurrentStory);
-            }
+            }          
           });
         promises.push(res);
         if(isFactu){
           let correctedDate = moment(date).startOf('month').format('YYYY-MM-DD[T]HH:mm:ss.SSS');
           let nowDate = moment();
-
-          let tempnow = '2019-01-31T23:35:09.259Z'
-          let tempdep = '2019-01-01T00:00:00.001Z'
-          let res2 = this.Angularget("https://www.pivotaltracker.com/services/v5/projects/" + projects[i].id + "/stories?accepted_after=" + tempdep + "&accepted_before=" + tempnow)
+          let factuInfoDate = epic.split('-')[1].trim().split(' ');
+          let strDateStart = ''
+          let dateStart;
+          let dateEnd;
+          if(factuInfoDate){
+            strDateStart = factuInfoDate[2] + "-" + this.monthConversion[factuInfoDate[1].toLowerCase()] + "-01";
+            dateStart = moment(strDateStart).toISOString();
+            dateEnd = moment(strDateStart).endOf('month').toISOString();
+          }else{
+            alert('l\'epic ne permet pas de déterminer un mois de facturation');
+            //TODO gerer le cas et faire pop un picker de date
+            return;
+          }
+          //let dateNow = moment().toISOString()
+          // let tempnow = '2019-01-31T23:35:09.259Z'
+          // let tempdep = '2019-01-01T00:00:00.001Z'
+          let res2 = this.Angularget("https://www.pivotaltracker.com/services/v5/projects/" + projects[i].id + "/stories?accepted_after=" + dateStart + "&accepted_before=" + dateEnd)
             .toPromise().then((res: any) => {
               for (let u in res) {
                 let stringLabels: string = "  ";
@@ -118,10 +145,7 @@ export class StoryService {
                   }
                   myCurrentStory.labels = stringLabels;
                   stringLabels = " ";
-                }
-                if(projects[i].id == 2120356){
-                  console.log('pôhjiaezrfgphiorgazohipgrehiop', myCurrentStory);
-                }
+                }                
               }
             });
           promises.push(res2);
@@ -129,14 +153,6 @@ export class StoryService {
       }
       Promise.all(promises).then(() => {
 
-        // if(isFactu){
-        //   this.getAcceptedProjectStories(projects,'01/01/2019', epic).then(() => {
-        //     alert('tout cehercher')
-        //     resolve(stories)
-        //   })
-        // }
-        // let objectToSend: any = {};
-        // objectToSend.stories = stories;
         this.distinctStories(stories, storiesAccepted).then((result) => {
           resolve(this.formatStories(result))
         });      

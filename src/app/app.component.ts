@@ -31,6 +31,9 @@ export class AppComponent implements OnInit{
   concernedStoriesFactu: any[];
   concernedTasks: any[];
 
+  valueDT: number = 8; 
+  valueCDP: number = 12;
+
   private tarifications;
 
   private ressourceForm;
@@ -94,7 +97,7 @@ export class AppComponent implements OnInit{
     }
 
     proceed(event){
-      console.log('event click',event);
+      console.log('event click',this.valueCDP, this.valueDT);
       //Récupération des projets contenant l'épique choisi
       this.formatterservice.getProjectFromEpic(this.projects, this.selectedEpic).then(results =>{
         this.concernedProjects = results;
@@ -132,24 +135,16 @@ export class AppComponent implements OnInit{
                 this.missingRessources = _.uniq(retour.missingRessources);
                 this.manageMissingRessources().then(() => {
                   this.transmuteObjects();
-                  this.formatterservice.encapsulateObjects(this.concernedProjects, this.totalStories, this.concernedTasks, this.isFactu,12,8,this.selectedEpic);
+                  this.formatterservice.encapsulateObjects(this.concernedProjects, this.totalStories, this.concernedTasks, this.isFactu,this.valueCDP,this.valueDT,this.selectedEpic);
                 });
-                // this.setModalAjoutRessou_.uniq(rce(_.uniq(retour.missingRessources),retour.missingRessources[0] )
-                //.close((result) => {console.log('resultmodalclose',result);});
               }else{
                 console.log('before transmute ', JSON.parse(JSON.stringify(this.concernedTasks)))
                 this.transmuteObjects();
                 console.log('after  transmute ', this.concernedTasks)
 
-                this.formatterservice.encapsulateObjects(this.concernedProjects, this.totalStories, this.concernedTasks, this.isFactu,12,8,this.selectedEpic);
+                this.formatterservice.encapsulateObjects(this.concernedProjects, this.totalStories, this.concernedTasks, this.isFactu,this.valueCDP,this.valueDT,this.selectedEpic);
 
-              }
-              console.log('',);
-              // if (retour) {
-              //   this.myTransMuter.encapsulateObjects(transformedProject, transformedStories, transformedTasks, false, 0, 0, this.epicCommande)
-              //   console.log('envoir en cours');
-              //   this.setSpinner();
-              // }
+              }             
             }).catch((retour) => {
               //location.reload(true);
               console.log('error',retour);
@@ -161,10 +156,17 @@ export class AppComponent implements OnInit{
 
     onSelectionChange(event){
       console.log('entry',event);
+      let factucontainer = document.querySelector('#factuInfosContainer');
       if(event.target.id == 'devis'){
+        if(!factucontainer.classList.contains('hidden')){
+          factucontainer.classList.add('hidden');
+        }
         this.isFactu = false;
       }else{
         this.isFactu = true;
+        if(factucontainer.classList.contains('hidden')){
+          factucontainer.classList.remove('hidden');
+        }
       }
     }
 

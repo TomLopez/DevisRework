@@ -20,7 +20,15 @@
       <div class="col-md-4"></div>  
       <div id="monthSelectorContainer" class="col-md-12">
 
-      </div>  
+      </div>
+      <div id="factuInfosContainer" class="row hidden">
+        <div class="col-md-6">
+          <label>Jours Chef de projet :</label><input type="number" id="inputCDP" [(ngModel)]="valueCDP"/>
+        </div>
+        <div class="col-md-6">
+          <label>Jours Directeur technique :</label><input type="number" id="inputDT" [(ngModel)]="valueDT"/>
+        </div>
+      </div>
     </div>
   </div>
 </app-layout>
